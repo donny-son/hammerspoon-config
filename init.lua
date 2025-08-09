@@ -8,7 +8,7 @@ local config = {
 		red = 0,
 		green = 0,
 		blue = 0,
-		alpha = 0.7, -- Starting opacity (0-1, higher = more opaque)
+		alpha = 0.7,        -- Starting opacity (0-1, higher = more opaque)
 	},
 	easingStyle = "cubic", -- Options: "quad", "cubic", "quart", "expo"
 }
@@ -121,7 +121,8 @@ function animateWindowActivation(window)
 	local startTime = hs.timer.secondsSinceEpoch()
 	local startAlpha = config.overlayColor.alpha
 
-	local animator = hs.timer.doEvery(0.016, function() -- ~60fps
+	local animator
+	animator = hs.timer.doEvery(0.016, function() -- ~60fps
 		local elapsed = hs.timer.secondsSinceEpoch() - startTime
 		local progress = math.min(elapsed / config.duration, 1)
 
@@ -222,7 +223,8 @@ function createBorderFlash(targetWindow)
 	-- Animate fade out
 	local startTime = hs.timer.secondsSinceEpoch()
 
-	local animator = hs.timer.doEvery(0.016, function()
+	local animator
+	animator = hs.timer.doEvery(0.016, function()
 		local elapsed = hs.timer.secondsSinceEpoch() - startTime
 		local progress = math.min(elapsed / config.duration, 1)
 		local eased = 1 - easeIn(progress)
@@ -277,26 +279,26 @@ end)
 
 -- Application watcher
 hs.application.watcher
-	.new(function(appName, eventType, appObject)
-		if eventType == hs.application.watcher.activated then
-			for _, excluded in ipairs(excludedApps) do
-				if appName == excluded then
-					return
-				end
-			end
-
-			hs.timer.doAfter(0.01, function()
-				local app = hs.application.frontmostApplication()
-				if app then
-					local window = app:focusedWindow()
-					if window then
-						animateWindowActivation(window)
+		.new(function(appName, eventType, appObject)
+			if eventType == hs.application.watcher.activated then
+				for _, excluded in ipairs(excludedApps) do
+					if appName == excluded then
+						return
 					end
 				end
-			end)
-		end
-	end)
-	:start()
+
+				hs.timer.doAfter(0.01, function()
+					local app = hs.application.frontmostApplication()
+					if app then
+						local window = app:focusedWindow()
+						if window then
+							animateWindowActivation(window)
+						end
+					end
+				end)
+			end
+		end)
+		:start()
 
 -- Clean up periodically
 hs.timer.doEvery(60, function()
