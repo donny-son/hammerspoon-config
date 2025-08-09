@@ -1,5 +1,6 @@
 -- Window Ease-In Transparency Animation for Hammerspoon
 -- Creates a fading overlay effect to simulate transparency animation
+-- Only applies when windows are activated/focused, not when closed
 
 -- Configuration
 local config = {
@@ -8,9 +9,10 @@ local config = {
 		red = 0,
 		green = 0,
 		blue = 0,
-		alpha = 0.7,        -- Starting opacity (0-1, higher = more opaque)
+		alpha = 0.7, -- Starting opacity (0-1, higher = more opaque)
 	},
-	easingStyle = "cubic", -- Options: "quad", "cubic", "quart", "expo"
+	easingStyle = "quad", -- Options: "quad", "cubic", "quart", "expo"
+	aerospaceDelay = 0.05, -- Delay in seconds to wait for Aerospace window manager to complete resizing
 }
 
 -- Easing functions
@@ -273,32 +275,36 @@ windowFilter:subscribe(hs.window.filter.windowFocused, function(window)
 				end
 			end
 		end
-		animateWindowActivation(window)
+		-- Add delay for Aerospace window manager to complete resizing
+		hs.timer.doAfter(config.aerospaceDelay, function()
+			animateWindowActivation(window)
+		end)
 	end
 end)
 
 -- Application watcher
 hs.application.watcher
-		.new(function(appName, eventType, appObject)
-			if eventType == hs.application.watcher.activated then
-				for _, excluded in ipairs(excludedApps) do
-					if appName == excluded then
-						return
+	.new(function(appName, eventType, appObject)
+		if eventType == hs.application.watcher.activated then
+			for _, excluded in ipairs(excludedApps) do
+				if appName == excluded then
+					return
+				end
+			end
+
+			-- Add delay for Aerospace window manager to complete resizing
+			hs.timer.doAfter(config.aerospaceDelay, function()
+				local app = hs.application.frontmostApplication()
+				if app then
+					local window = app:focusedWindow()
+					if window then
+						animateWindowActivation(window)
 					end
 				end
-
-				hs.timer.doAfter(0.01, function()
-					local app = hs.application.frontmostApplication()
-					if app then
-						local window = app:focusedWindow()
-						if window then
-							animateWindowActivation(window)
-						end
-					end
-				end)
-			end
-		end)
-		:start()
+			end)
+		end
+	end)
+	:start()
 
 -- Clean up periodically
 hs.timer.doEvery(60, function()
@@ -432,6 +438,17 @@ hs.hotkey.bind({ "cmd", "alt", "ctrl" }, "E", function()
 	config.easingStyle = styles[currentIndex]
 	easeIn = easingFunctions[config.easingStyle]
 	hs.alert.show("Easing style: " .. config.easingStyle)
+end)
+
+-- Adjust Aerospace delay
+hs.hotkey.bind({ "cmd", "alt", "ctrl" }, "Up", function()
+	config.aerospaceDelay = math.min(config.aerospaceDelay + 0.05, 1.0)
+	hs.alert.show(string.format("Aerospace delay: %.2fs", config.aerospaceDelay))
+end)
+
+hs.hotkey.bind({ "cmd", "alt", "ctrl" }, "Down", function()
+	config.aerospaceDelay = math.max(config.aerospaceDelay - 0.05, 0)
+	hs.alert.show(string.format("Aerospace delay: %.2fs", config.aerospaceDelay))
 end)
 
 -- Reload
