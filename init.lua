@@ -4,12 +4,12 @@
 
 -- Configuration
 local config = {
-	duration = 0.3, -- Animation duration in seconds
+	duration = 0.8, -- Animation duration in seconds
 	overlayColor = { -- Overlay color (black by default)
 		red = 0,
 		green = 0,
 		blue = 0,
-		alpha = 0.7, -- Starting opacity (0-1, higher = more opaque)
+		alpha = 0.3,        -- Starting opacity (0-1, higher = more opaque)
 	},
 	easingStyle = "quad", -- Options: "quad", "cubic", "quart", "expo"
 	aerospaceDelay = 0.05, -- Delay in seconds to wait for Aerospace window manager to complete resizing
@@ -284,27 +284,27 @@ end)
 
 -- Application watcher
 hs.application.watcher
-	.new(function(appName, eventType, appObject)
-		if eventType == hs.application.watcher.activated then
-			for _, excluded in ipairs(excludedApps) do
-				if appName == excluded then
-					return
-				end
-			end
-
-			-- Add delay for Aerospace window manager to complete resizing
-			hs.timer.doAfter(config.aerospaceDelay, function()
-				local app = hs.application.frontmostApplication()
-				if app then
-					local window = app:focusedWindow()
-					if window then
-						animateWindowActivation(window)
+		.new(function(appName, eventType, appObject)
+			if eventType == hs.application.watcher.activated then
+				for _, excluded in ipairs(excludedApps) do
+					if appName == excluded then
+						return
 					end
 				end
-			end)
-		end
-	end)
-	:start()
+
+				-- Add delay for Aerospace window manager to complete resizing
+				hs.timer.doAfter(config.aerospaceDelay, function()
+					local app = hs.application.frontmostApplication()
+					if app then
+						local window = app:focusedWindow()
+						if window then
+							animateWindowActivation(window)
+						end
+					end
+				end)
+			end
+		end)
+		:start()
 
 -- Clean up periodically
 hs.timer.doEvery(60, function()
